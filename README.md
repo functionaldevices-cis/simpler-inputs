@@ -5,15 +5,15 @@ Generally, working directly with prototypes is considered bad practice. However,
 With raw JS, to get the value of a text input, you'd say something like:
 
 ```javascript
-let myInput = document.querySelector('[name="my-input"]');
-let value = myInput.value;
+let myTextInput = document.querySelector('[name="my-text-input"]');
+let value = myTextInput.value;
 ```
 
 To get the value of a set of radio inputs, though, you'd have to:
 
 ```javascript
-let myInput = document.querySelector('[name="my-input"]:checked');
-let value = myInput.value;
+let myRadioInput = document.querySelector('[name="my-radio-input"]:checked');
+let value = myRadioInput.value;
 ```
 
 You have to write a different set of code depending on the input type.
@@ -29,16 +29,24 @@ It just works.
 
 ---------------------------
 
-It's even more helpful when setting values. To set the value of a set of radio buttons, with vanilla JS:
+It's even more helpful when setting values. Vanilla JS:
 
 ```javascript
-let myInput = document.querySelector('[name="my-input"][value="'+specifiedValue+'"]');
+// SET TEXT INPUT
+
+let myTextInput = document.querySelector('[name="my-text-input"]');
+myTextInput.value = specifiedValue;
+
+// SET RADIO INPUT
+
+let myRadioInput = document.querySelector('[name="my-radio-input"][value="'+specifiedValue+'"]');
 myInput.checked = true;
 ```
 
 With SimplerInputs, that becomes:
 
 ```javascript
+// SET ANY INPUT
 let myInput = document.querySelector('[name="my-input"]');
 myInput.setValue(specifiedValue);
 ```
