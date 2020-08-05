@@ -6,6 +6,8 @@ Generally, working directly with prototypes is considered bad practice. However,
 
 ### Vanilla JS:
 
+You have to write a different set of code depending on the input type.
+
 ```javascript
 // GET TEXT INPUT VALUE
 let myTextInput = document.querySelector('[name="my-text-input"]');
@@ -15,9 +17,9 @@ let value = myTextInput.value;
 let myRadioInput = document.querySelector('[name="my-radio-input"]:checked');
 let value = myRadioInput.value;
 ```
-You have to write a different set of code depending on the input type.
+### SimplerInputs
 
-### SimplerInputs (Regardless of Type: Text, Checkbox, Radio, Date, Select, Textarea, etc.)
+The same function works regardless of type: Text, Checkbox, Radio, Date, Select, Textarea, etc.
 
 ```javascript
 // GET ANY INPUT VALUE
