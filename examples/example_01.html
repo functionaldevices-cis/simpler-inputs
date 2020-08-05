@@ -1,0 +1,124 @@
+<!DOCTYPE HTML>
+<html>
+	<head>
+		<title>SimplerInputs - Example 1</title>
+		<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0">
+		<meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+		<meta content="True" name="HandheldFriendly">
+		<meta name="robots" content="noindex, nofollow" />
+		<script type="text/javascript" src="scripts/simpler-inputs.min.js"></script>
+		<style>
+			body {
+				font-family: Calibri,Roboto,Sans-Serif;
+				font-size: 18px;
+				background:rgb(240,240,240);
+			}
+			body > div {
+				background:white;
+				box-shadow:0 0 2px 1px rgba(0,0,0,0.5);
+				padding:20px;
+				margin-bottom:20px;
+			}
+			form {
+				border:solid 1px gray;
+				padding:20px;
+				margin-bottom:10px;
+			}
+			form > section {
+				display:block;
+			}
+			form > section:not(:last-child) {
+				margin-bottom:20px;
+			}
+			h1, h2 { margin-top:0; }
+			h4 { margin-bottom:5px;  }
+			h4:first-child { margin-top:0; }
+			label {
+				display:block;
+			}
+			code {
+				background:rgba(0,0,0,0.15);
+				padding:6px 12px;
+				border-radius:4px;
+			}
+			input, select, textarea {
+				font-family: inherit;
+				font-size: inherit;
+				font-weight: inherit;
+			}
+		</style>
+	</head>
+	<body>
+		<h1>Example 1 - Single Form, All Default Input Types</h1>
+		<div>
+			<form action="endpoint.html" method="get" id="form1">
+				<section>
+					<h4>Text Input</h4>
+					<input type="text" name="example-text" />
+					<button class="get-value" type="button">Get Value</button>
+					<pre><code>console.log(document.querySelector('#form1 [name="example-text"]').getValue())</code></pre>
+				</section>
+				<section>
+					<h4>Textarea Input</h4>
+					<textarea name="example-textarea"></textarea>
+					<button class="get-value" type="button">Get Value</button>
+					<pre><code>console.log(document.querySelector('#form1 [name="example-textarea"]').getValue())</code></pre>
+				</section>
+				<section>
+					<h4>Radio Inputs</h4>
+					<label><input type="radio" name="example-radio" value="one" checked />One</label>
+					<label><input type="radio" name="example-radio" value="two" id="test" />Two</label>
+					<label><input type="radio" name="example-radio" value="three" />Three</label>
+					<button class="get-value" type="button">Get Value</button>
+					<pre><code>console.log(document.querySelector('#form1 [name="example-radio"]').getValue())</code></pre>
+				</section>
+				<section>
+					<h4>Checkbox Inputs</h4>
+					<label><input type="checkbox" name="example-checkbox" value="one" checked />One</label>
+					<label><input type="checkbox" name="example-checkbox" value="two" />Two</label>
+					<label><input type="checkbox" name="example-checkbox" value="three" />Three</label>
+					<button class="get-value" type="button">Get Value</button>
+					<pre><code>console.log(document.querySelector('#form1 [name="example-checkbox"]').getValue())</code></pre>
+				</section>
+				<section>
+					<h4>Select</h4>
+					<select name="example-select">
+						<option value="one">One</option>
+						<option value="two">Two</option>
+						<option value="three">Three</option>
+					</select>
+					<button class="get-value" type="button">Get Value</button>
+					<pre><code>console.log(document.querySelector('#form1 [name="example-select"]').getValue())</code></pre>
+				</section>
+				<section>
+					<h4>Date Input</h4>
+					<input type="date" name="example-date" value="" />
+					<button class="get-value" type="button">Get Value</button>
+					<pre><code>console.log(document.querySelector('#form1 [name="example-date"]').getValue())</code></pre>
+				</section>
+			</form>
+			<button class="get-form-value" type="button">Get Form Serialized String</button>
+		</div>
+	</body>
+	<script>
+
+		document.addEventListener('click', function(event){
+
+			if ( event.target.classList.contains('get-value') ) {
+
+				let input = event.target.parentElement.querySelector('input, textarea, select');
+
+				alert( input.getValue() );
+
+			} else if ( event.target.classList.contains('get-form-value') ) {
+
+				let form = event.target.previousElementSibling;
+
+				alert( form.serialize() );
+
+			}
+
+		});
+
+	</script>
+</body>
