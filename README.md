@@ -29,13 +29,16 @@ It just works.
 
 ---------------------------
 
-Setting values is even more helpful. To set which radio button is selected, you have to find the input that matches the specified value and then set `.checked` to true.
+It's even more helpful when setting values. To set the value of a set of radio buttons, with vanilla JS:
 
-With SimplerInputs, you just say (again, regardless of input type):
+```javascript
+let myInput = document.querySelector('[name="my-input"][value="'+specifiedValue+'"]');
+myInput.checked = true;
+```
+
+With SimplerInputs, that becomes:
 
 ```javascript
 let myInput = document.querySelector('[name="my-input"]');
-let value = myInput.setValue( newValue );
+myInput.setValue(specifiedValue);
 ```
-
-Life becomes much easier.
