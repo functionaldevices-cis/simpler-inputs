@@ -83,3 +83,13 @@
 	});
 
 }(window));
+
+
+
+	window.simplerInputs.registerCustomType({
+		'type' : 'text-datetime-local',
+		'setValue' : function( input, newValue ) {
+			input.value = newValue;
+			input.updateFakeDateAndTimeInputs();
+		}
+	});
