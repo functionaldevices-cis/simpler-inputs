@@ -82,8 +82,13 @@
 
 			// CHECK TO SEE IF WE ARE BEING PASSED A CALLBACK
 
-			self.config.customGetValueFunctions[params.type] = params.getValue;
-			self.config.customSetValueFunctions[params.type] = params.setValue;
+			if ( 'getValue' in params ) {
+				self.config.customGetValueFunctions[params.type] = params.getValue;
+			}
+
+			if ( 'setValue' in params ) {
+				self.config.customSetValueFunctions[params.type] = params.setValue;
+			}
 
 		};
 
@@ -116,17 +121,42 @@
 		// SET UP VARIABLES
 
 		let keyValuePairStringsTemp = [];
-		let HTTPParams = deSerializeHTTPParams(serializedParams);
 
-		// LOOP THROUGH THE OBJECT AND CONFIRM EVERYTHING IS ENCODED, THEN REMERGE
+		// DE-SERIALIZE THE HTTP PARAMS
 
-		for ( let key in HTTPParams ) {
+		let HTTPParamsObject = deSerializeHTTPParams(serializedParams);
 
-			keyValuePairStringsTemp.push( encodeURIComponent(key) + '=' + encodeURIComponent(HTTPParams[key]) )
+		// ENCODE THE HTTP PARAMS
 
-		}
+		HTTPParamsObject = encodeHTTPParamsObject( HTTPParamsObject );
 
-		return keyValuePairStringsTemp.join('&');
+		// RE-SERIALIZE THE PARAMS
+
+		return serializeHTTPParams( HTTPParamsObject );
+
+	};
+
+	function encodeHTTPParamsObject( HTTPParamsObject ) {
+
+		// LOOP THROUGH THE OBJECT AND ENCODE EVERYTHING
+
+		let encodedHTTPParamsObject = {};
+
+		let HTTPParamsArray = Object.entries(HTTPParamsObject);
+
+		HTTPParamsArray.forEach( function( [key, value] ) {
+			encodedHTTPParamsObject[encodeURIComponent(key)] = encodeURIComponent(value);
+		});
+		
+		return encodedHTTPParamsObject;
+
+	}
+
+	function serializeHTTPParams( HTTPParamsObject ) {
+
+		return Object.entries(HTTPParamsObject).map(function( [key, value] ) { 
+			return key + '=' + value;
+		}).join('&');
 
 	}
 
@@ -375,12 +405,6 @@
 					allInputs[i].checked = values.includes( allInputs[i].value ) ? true : false;
 
 				}
-
-			},
-
-			'time' : function( input ) {
-
-				return input.value + ( (input.value.match(/:/g)||[]).length == 1 ? ':00' : '');
 
 			}
 
