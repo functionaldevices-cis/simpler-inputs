@@ -60,7 +60,7 @@
 
 					if ( inputType.startsWith('text') || [ 'email', 'tel', 'fax', 'url', 'date', 'time', 'week', 'month', 'number'].includes( inputType ) ) {
 
-						initKeyStoppedEvent( input );
+						window.simplerInputs.initKeyStoppedEvent( input );
 
 					}
 
@@ -105,6 +105,22 @@
 				self.config[key] = value;
 
 			}
+
+		};
+
+		Class.prototype.initKeyStoppedEvent = function( element ) {
+
+			var keystoppedTimer = null;
+
+			element.addEventListener('keydown', function(event){
+
+				clearTimeout(keystoppedTimer);
+
+				keystoppedTimer = setTimeout(function() {
+					event.target.dispatchEvent( new Event('keystopped') );
+				}, 600);
+
+			});
 
 		};
 
@@ -202,22 +218,6 @@
 		}
 
 		return keysValuesObject;
-
-	};
-
-	function initKeyStoppedEvent( element ) {
-
-		var keystoppedTimer = null;
-
-		element.addEventListener('keydown', function(event){
-
-			clearTimeout(keystoppedTimer);
-
-			keystoppedTimer = setTimeout(function() {
-				event.target.dispatchEvent( new Event('keystopped') );
-			}, 600);
-
-		});
 
 	};
 
