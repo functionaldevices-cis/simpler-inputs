@@ -31,40 +31,8 @@
 
 			document.addEventListener('DOMContentLoaded', function(event){
 
-				document.querySelectorAll('input, textarea, select').forEach(function(input){
+				self.initLogicForInputs( document.querySelectorAll('input, textarea, select') );
 
-					let inputType = input.getType();
-
-					switch( inputType ) {
-
-						case 'radio' :
-
-							input.addEventListener('change', function(event){
-
-								var inputs = input.getScope().querySelectorAll('input[name="' + input.name + '"]');
-								inputs.forEach(function(siblingInput){
-									siblingInput.dispatchEvent(new Event('change-all', { bubbles: true }))
-								});
-
-							});
-
-							break;
-
-					}
-
-					// STORE THE ORIGINAL VALUE TO TRACK IF INPUT HAS CHANGED
-
-					input.storeOriginalValue();
-
-					// SET UP KEYSTOPPED EVENT
-
-					if ( inputType.startsWith('text') || [ 'email', 'tel', 'fax', 'url', 'date', 'time', 'week', 'month', 'number'].includes( inputType ) ) {
-
-						window.simplerInputs.initKeyStoppedEvent( input );
-
-					}
-
-				});
 
 			});
 
@@ -73,6 +41,51 @@
 		/***************************************/
 		/********** PUBLIC FUNCTIONS ***********/
 		/***************************************/
+
+		Class.prototype.initLogicForInputs = function( inputs ) {
+
+			// STORE this AS self, SO THAT IT IS ACCESSIBLE IN SUB-FUNCTIONS AND TIMEOUTS.
+
+			var self = this;
+
+			// CHECK TO SEE IF WE ARE BEING PASSED A CALLBACK
+
+			inputs.forEach(function(input){
+
+				let inputType = input.getType();
+
+				switch( inputType ) {
+
+					case 'radio' :
+
+						input.addEventListener('change', function(event){
+
+							var inputs = input.getScope().querySelectorAll('input[name="' + input.name + '"]');
+							inputs.forEach(function(siblingInput){
+								siblingInput.dispatchEvent(new Event('change-all', { bubbles: true }))
+							});
+
+						});
+
+						break;
+
+				}
+
+				// STORE THE ORIGINAL VALUE TO TRACK IF INPUT HAS CHANGED
+
+				input.storeOriginalValue();
+
+				// SET UP KEYSTOPPED EVENT
+
+				if ( inputType.startsWith('text') || [ 'email', 'tel', 'fax', 'url', 'date', 'time', 'week', 'month', 'number'].includes( inputType ) ) {
+
+					window.simplerInputs.initKeyStoppedEvent( input );
+
+				}
+
+			});
+
+		};
 
 		Class.prototype.registerCustomType = function( params ) {
 
