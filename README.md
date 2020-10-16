@@ -1,6 +1,7 @@
 # SimplerInputs - A Javascript Prototype-Based Abstraction Layer
-This is an abraction layer added to input and form DOM prototypes, to make working with inputs easier.
-Generally, working directly with prototypes is considered bad practice. However, I disagree in some cases. With this library, it becomes much simpler to work with inputs and forms.
+This is an abraction layer added to input and form DOM prototypes, to make working with inputs easier. While generally, working directly with prototypes is considered bad practice, this library has greatly simplified the process of working with inputs for FDI's internal web applications. It is being shared here publicly as a way to give back to the JS community.'
+
+Documentation will be added to the Wiki in the future as time allows.
 
 ## Getting Values of Inputs
 
