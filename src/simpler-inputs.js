@@ -77,7 +77,7 @@
 
 				// SET UP KEYSTOPPED EVENT
 
-				if ( inputType.startsWith('text') || [ 'email', 'tel', 'fax', 'url', 'date', 'time', 'week', 'month', 'number'].includes( inputType ) ) {
+				if ( inputType.startsWith('text') || [ 'email', 'tel', 'fax', 'url', 'date', 'time', 'week', 'month', 'number' ].includes( inputType ) ) {
 
 					window.simplerInputs.initKeyStoppedEvent( input );
 
@@ -130,7 +130,7 @@
 				clearTimeout(keystoppedTimer);
 
 				keystoppedTimer = setTimeout(function() {
-					event.target.dispatchEvent( new Event('keystopped') );
+					event.target.dispatchEvent( new Event('keystopped', { bubbles: true }) );
 				}, 600);
 
 			});
@@ -303,28 +303,6 @@
 	};
 
 	HTMLSelectElement.prototype.hasOption = hasOption;
-
-	// GET NEAREST ANCESTOR OF SPECIFIED TAGNAME
-
-	let getAncestorByTagName = function( tagName ) {
-
-		var target = this;
-
-		while ( target.tagName.toLowerCase() != tagName && target.tagName.toLowerCase() != 'body' ) {
-			if ( ! ( 'parentNode' in target && target.parentNode !== null ) ) {
-				return false;
-			}
-			target = target.parentNode;
-		}
-		if ( target.tagName.toLowerCase() == 'body' ) {
-			return false;
-		} else {
-			return target;
-		}
-
-	};
-
-	Element.prototype.getAncestorByTagName = getAncestorByTagName;
 
 	// SET VALUE
 
@@ -794,27 +772,25 @@
 
 	// SERIALIZE ALL INPUTS IN A WRAPPER
 
-	let serialize = function( params ) {
+	let getValues = function( params ) {
 
 		// SET UP VARIABLES
 
 		var form = this; // THIS IS CALLED FORM. BUT IT COULD BE ANY ELEMENT AS A WRAPPER
-		var serializedFields = '';
-		var keyValuePairStrings = [];
-		var keys = [];
+		var values = {};
 		var globalConfig = window.simplerInputs.config;
 
 		// PRELOAD KEY VALUE PAIRS THAT ARE PRESERIALIZED
 
 		if ( form.getAttribute('serialized-params') !== null ) {
-			keyValuePairStrings.push( encodeSerializedHTTPParams(form.getAttribute('serialized-params')) )
+			values = deSerializeHTTPParams(form.getAttribute('serialized-params'));
 		}
 
 		// SET UP CONFIG DEFAULTS
 
 		var config = {
 			'partialSubmitMode' : 'partialSubmitMode' in globalConfig.serializationDefaults ? globalConfig.serializationDefaults.partialSubmitMode : ( form.getAttribute('partialSubmit') !== null ),
-			'excludedParentTagNames' : 'excludedParentTagNames' in globalConfig.serializationDefaults ? globalConfig.serializationDefaults.excludedParentTagNames : [],
+			'excludedParentSelectors' : 'excludedParentSelectors' in globalConfig.serializationDefaults ? globalConfig.serializationDefaults.excludedParentSelectors : [],
 			'multiValueSeparator' : globalConfig.multiValueSeparator
 		};
 
@@ -825,8 +801,8 @@
 			if ( 'partialSubmitMode' in params ) {
 				config.partialSubmitMode = params.partialSubmitMode;
 			}
-			if ( 'excludedParentTagNames' in params ) {
-				config.excludedParentTagNames = params.excludedParentTagNames;
+			if ( 'excludedParentSelectors' in params ) {
+				config.excludedParentSelectors = params.excludedParentSelectors;
 			}
 			if ( 'multiValueSeparator' in params ) {
 				config.multiValueSeparator = params.multiValueSeparator;
@@ -845,13 +821,13 @@
 		// LOOP THROUGH ALL FIELD OBJECTS AND CHECK FOR VALIDITY AND CHANGES. ANY INVALID FIELDS WILL SET
 		// FORM TO INVALID, AND ALL CHANGES WILL BE RECORDED FOR SUBMISSION
 
-		form.querySelectorAll('input, textarea, select').forEach(function(input){
+		form.getSubmittableInputs().forEach(function(input){
 
 			// CHECK TO SEE IF INPUT IS IN EXCLUDED PARENT
 
 			state.isInputInExcludedParent = false;
-			config.excludedParentTagNames.forEach(function(excludedParentTagName){
-				let excludedParent = input.getAncestorByTagName(excludedParentTagName);
+			config.excludedParentSelectors.forEach(function(excludedParentSelector){
+				let excludedParent = input.closest(excludedParentSelector);
 				if ( excludedParent !== false && form.contains(excludedParent) ) {
 					state.isInputInExcludedParent = true;
 				}
@@ -881,12 +857,118 @@
 					break;
 			}
 
-			if ( input.name === '' ) {
-				state.inputShouldBeSubmitted = false;
+			if ( input.getType() === 'checkbox' && input.getValue() === '' ) {
+				state.inputShouldBeSubmitted = false;				
 			}
 
-			if ( keys.includes( encodeURIComponent( input.name ) ) ) {
-				state.inputShouldBeSubmitted = false;
+			if ( state.isInputInExcludedParent ) {
+				state.inputShouldBeSubmitted = false;	
+			}
+
+			// IF THE DATA HAS CHANGED OR IF THE FIELD IS SET TO ALWAYS SUBMIT, ADD IT TO THE DATA STACK
+
+			if ( state.inputShouldBeSubmitted ) {
+
+				values[ input.name ] = input.getValue( config.multiValueSeparator );
+
+			}
+
+		});
+
+		// RETURN SERIALIZED DATA
+
+		return values;
+
+	};
+
+	Element.prototype.getValues = getValues;
+
+	// SERIALIZE ALL INPUTS IN A WRAPPER
+
+	let serialize = function( params ) {
+
+		// SET UP VARIABLES
+
+		var form = this; // THIS IS CALLED FORM. BUT IT COULD BE ANY ELEMENT AS A WRAPPER
+		var serializedFields = '';
+		var keyValuePairStrings = [];
+		var globalConfig = window.simplerInputs.config;
+
+		// PRELOAD KEY VALUE PAIRS THAT ARE PRESERIALIZED
+
+		if ( form.getAttribute('serialized-params') !== null ) {
+			keyValuePairStrings.push( encodeSerializedHTTPParams(form.getAttribute('serialized-params')) )
+		}
+
+		// SET UP CONFIG DEFAULTS
+
+		var config = {
+			'partialSubmitMode' : 'partialSubmitMode' in globalConfig.serializationDefaults ? globalConfig.serializationDefaults.partialSubmitMode : ( form.getAttribute('partialSubmit') !== null ),
+			'excludedParentSelectors' : 'excludedParentSelectors' in globalConfig.serializationDefaults ? globalConfig.serializationDefaults.excludedParentSelectors : [],
+			'multiValueSeparator' : globalConfig.multiValueSeparator
+		};
+
+		// APPLY INDVIDUAL FUNCTION CALL OVERRIDES VIA PARAMETER
+
+		if ( typeof params === 'object' ) {
+
+			if ( 'partialSubmitMode' in params ) {
+				config.partialSubmitMode = params.partialSubmitMode;
+			}
+			if ( 'excludedParentSelectors' in params ) {
+				config.excludedParentSelectors = params.excludedParentSelectors;
+			}
+			if ( 'multiValueSeparator' in params ) {
+				config.multiValueSeparator = params.multiValueSeparator;
+			}
+
+		}
+
+		// SET UP VARIABLE STATE
+
+		var state = {
+			'isInputInExcludedParent' : null,
+			'inputSubmitMode' : null,
+			'inputShouldBeSubmitted' : null
+		}
+
+		// LOOP THROUGH ALL FIELD OBJECTS AND CHECK FOR VALIDITY AND CHANGES. ANY INVALID FIELDS WILL SET
+		// FORM TO INVALID, AND ALL CHANGES WILL BE RECORDED FOR SUBMISSION
+
+		form.getSubmittableInputs().forEach(function(input){
+
+			// CHECK TO SEE IF INPUT IS IN EXCLUDED PARENT
+
+			state.isInputInExcludedParent = false;
+			config.excludedParentSelectors.forEach(function(excludedParentSelector){
+				let excludedParent = input.closest(excludedParentSelector);
+				if ( excludedParent !== false && form.contains(excludedParent) ) {
+					state.isInputInExcludedParent = true;
+				}
+			});
+
+			// DETERMINE THE INPUT'S SUBMIT MODE
+
+			state.inputSubmitMode = 'partial';
+			if ( input.getAttribute('alwaysSubmit') !== null ) {
+				state.inputSubmitMode = 'always';
+			}
+			if ( input.getAttribute('neverSubmit') !== null ) {
+				state.inputSubmitMode = 'never';
+			}
+
+			// DETERMINE IF INPUT SHOULD BE SUBMITTED
+
+			switch( state.inputSubmitMode ) {
+				case 'never' :
+					state.inputShouldBeSubmitted = false;
+					break;
+				case 'always' :
+					state.inputShouldBeSubmitted = true;
+					break;
+				default :
+					state.inputShouldBeSubmitted = ( ! config.partialSubmitMode ) || ( input.hasChanged() );
+					break;
 			}
 
 			if ( input.getType() === 'checkbox' && input.getValue() === '' ) {
@@ -902,7 +984,6 @@
 			if ( state.inputShouldBeSubmitted ) {
 
 				keyValuePairStrings.push( encodeURIComponent( input.name ) + '=' + encodeURIComponent( input.getValue( config.multiValueSeparator ) ) );
-				keys.push( encodeURIComponent( input.name ) );
 
 			}
 
@@ -920,47 +1001,112 @@
 
 	Element.prototype.serialize = serialize;
 
-	// GET ALL INPUT NAMES IN A WRAPPER
+	// GET SUBMITTABLE INPUT NAMES IN A WRAPPER
 
-	let getInputNames = function( params ) {
+	let getSubmittableInputs = function() {
 
 		// SET UP VARIABLES
 
-		var form = this;
-		var keys = [];
+		let keys = [];
+		let inputs = [];
 
 		// LOOP THROUGH ALL FIELD OBJECTS AND CHECK FOR VALIDITY AND CHANGES. ANY INVALID FIELDS WILL SET
 		// FORM TO INVALID, AND ALL CHANGES WILL BE RECORDED FOR SUBMISSION
 
-		form.querySelectorAll('input, textarea, select').forEach(function(input){
+		this.querySelectorAll('input, textarea, select').forEach(function(input){
 
-			// IF THE INPUT HAS NO NAME, IGNORE IT.
+			if ( keys.includes( input.name ) ) {
+				return;
+			}
 
 			if ( input.name === '' ) {
 				return;
 			}
 
-			if ( keys.includes( encodeURIComponent( input.name ) ) ) {
-				return;
-			}
-
-			if ( input.readonly || input.disabled ) {
+			if ( input.disabled ) {
 				return;
 			}
 
 			// IF THE DATA HAS CHANGED OR IF THE FIELD IS SET TO ALWAYS SUBMIT, ADD IT TO THE DATA STACK
 
-			keys.push( encodeURIComponent( input.name ) );
+			keys.push( input.name );
+			inputs.push( input );
 
 		});
 
 		// RETURN KEYS
 
-		return keys;
+		return inputs;
 
 	};
 
-	Element.prototype.getInputNames = getInputNames;
+	Element.prototype.getSubmittableInputs = getSubmittableInputs;
+
+	// GET ALL INPUT NAMES IN A WRAPPER
+
+	let getAllInputs = function() {
+
+		return Array.from(this.querySelectorAll('input, textarea, select'));
+
+	};
+
+	Element.prototype.getAllInputs = getAllInputs;
+
+	// UPDATE ALL STORED ORIGINAL VALUES TO CURRENT
+
+	let updateOriginalValues = function() {
+
+		this.getAllInputs().forEach(function(input){
+
+			input.storeOriginalValue();
+
+		});
+
+	};
+
+	Element.prototype.updateOriginalValues = updateOriginalValues;
+
+	// RESET ALL VALUES TO STORED ORIGINALS
+
+	let resetValuesToOriginal = function() {
+
+		this.getAllInputs().forEach(function(input){
+
+			input.resetValueToOriginal();
+
+		});
+
+	};
+
+	Element.prototype.resetValuesToOriginal = resetValuesToOriginal;
+
+	/*************************************************************/
+	/******************* GENERAL USAGE FUNCTIONS *****************/
+	/*************************************************************/
+
+	window.serialize = function( data, innerConnector = '=', outerConnector = '&' ) {
+
+		// CONVERT THE OBJECT OF KEY VALUE PAIRS TO AN ARRAY OF STRINGIFIED KEY/VALUE PAIRS
+
+		let stringifiedKeyValuePairs = Object.entries( data ).map( ( [ key, value ] ) => ( key ) + innerConnector + ( value ) );
+
+		// JOIN THE STRINFIED PAIRS AND RETURN
+
+		return stringifiedKeyValuePairs.join( outerConnector );
+
+	};
+
+	window.deSerialize = function( serializedData, innerConnector = '=', outerConnector = '&' ) {
+
+		let stringifiedKeyValuePairs = serializedData ? serializedData.split( outerConnector ) : [];
+
+		return stringifiedKeyValuePairs.reduce(( accumulator, keyValuePair ) => {
+			[key, value] = keyValuePair.split( innerConnector );
+			accumulator[(key)] = (value);
+			return accumulator;
+		}, {});
+
+	};
 
 	/*************************************************************/
 	/*********************** INITIALIZATION **********************/
