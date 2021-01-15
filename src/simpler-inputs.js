@@ -77,7 +77,7 @@
 
 				// SET UP KEYSTOPPED EVENT
 
-				if ( inputType.startsWith('text') || [ 'email', 'tel', 'fax', 'url', 'date', 'time', 'week', 'month', 'number' ].includes( inputType ) ) {
+				if ( inputType.startsWith('text') || [ 'email', 'tel', 'fax', 'url', 'date', 'time', 'week', 'month', 'number'].includes( inputType ) ) {
 
 					window.simplerInputs.initKeyStoppedEvent( input );
 
@@ -885,121 +885,39 @@
 
 	// SERIALIZE ALL INPUTS IN A WRAPPER
 
-	let serialize = function( params ) {
+	let serializeForm = function( params ) { // THIS IS DIFFERENT FUNCTION NAME DUE TO CONFLICT WITH GENERIC FUNCTION
 
 		// SET UP VARIABLES
 
-		var form = this; // THIS IS CALLED FORM. BUT IT COULD BE ANY ELEMENT AS A WRAPPER
-		var serializedFields = '';
-		var keyValuePairStrings = [];
-		var globalConfig = window.simplerInputs.config;
+		var form = this;
 
-		// PRELOAD KEY VALUE PAIRS THAT ARE PRESERIALIZED
-
-		if ( form.getAttribute('serialized-params') !== null ) {
-			keyValuePairStrings.push( encodeSerializedHTTPParams(form.getAttribute('serialized-params')) )
+		if ( ! params ) {
+			params = {};
 		}
 
-		// SET UP CONFIG DEFAULTS
+		// EXTRACT SERIALIZATION PARAMS
 
-		var config = {
-			'partialSubmitMode' : 'partialSubmitMode' in globalConfig.serializationDefaults ? globalConfig.serializationDefaults.partialSubmitMode : ( form.getAttribute('partialSubmit') !== null ),
-			'excludedParentSelectors' : 'excludedParentSelectors' in globalConfig.serializationDefaults ? globalConfig.serializationDefaults.excludedParentSelectors : [],
-			'multiValueSeparator' : globalConfig.multiValueSeparator
-		};
+		let innerConnector = 'innerConnector' in params ? params.innerConnector : undefined;
+		let outerConnector = 'outerConnector' in params ? params.outerConnector : undefined;
 
-		// APPLY INDVIDUAL FUNCTION CALL OVERRIDES VIA PARAMETER
+		delete params.innerConnector;
+		delete params.outerConnector;
 
-		if ( typeof params === 'object' ) {
+		// GET THE VALUES AS AN OBJECT
 
-			if ( 'partialSubmitMode' in params ) {
-				config.partialSubmitMode = params.partialSubmitMode;
-			}
-			if ( 'excludedParentSelectors' in params ) {
-				config.excludedParentSelectors = params.excludedParentSelectors;
-			}
-			if ( 'multiValueSeparator' in params ) {
-				config.multiValueSeparator = params.multiValueSeparator;
-			}
+		let values = form.getValues( params );
 
-		}
+		// SERIALIZE THE VALUES
 
-		// SET UP VARIABLE STATE
-
-		var state = {
-			'isInputInExcludedParent' : null,
-			'inputSubmitMode' : null,
-			'inputShouldBeSubmitted' : null
-		}
-
-		// LOOP THROUGH ALL FIELD OBJECTS AND CHECK FOR VALIDITY AND CHANGES. ANY INVALID FIELDS WILL SET
-		// FORM TO INVALID, AND ALL CHANGES WILL BE RECORDED FOR SUBMISSION
-
-		form.getSubmittableInputs().forEach(function(input){
-
-			// CHECK TO SEE IF INPUT IS IN EXCLUDED PARENT
-
-			state.isInputInExcludedParent = false;
-			config.excludedParentSelectors.forEach(function(excludedParentSelector){
-				let excludedParent = input.closest(excludedParentSelector);
-				if ( excludedParent !== false && form.contains(excludedParent) ) {
-					state.isInputInExcludedParent = true;
-				}
-			});
-
-			// DETERMINE THE INPUT'S SUBMIT MODE
-
-			state.inputSubmitMode = 'partial';
-			if ( input.getAttribute('alwaysSubmit') !== null ) {
-				state.inputSubmitMode = 'always';
-			}
-			if ( input.getAttribute('neverSubmit') !== null ) {
-				state.inputSubmitMode = 'never';
-			}
-
-			// DETERMINE IF INPUT SHOULD BE SUBMITTED
-
-			switch( state.inputSubmitMode ) {
-				case 'never' :
-					state.inputShouldBeSubmitted = false;
-					break;
-				case 'always' :
-					state.inputShouldBeSubmitted = true;
-					break;
-				default :
-					state.inputShouldBeSubmitted = ( ! config.partialSubmitMode ) || ( input.hasChanged() );
-					break;
-			}
-
-			if ( input.getType() === 'checkbox' && input.getValue() === '' ) {
-				state.inputShouldBeSubmitted = false;				
-			}
-
-			if ( state.isInputInExcludedParent ) {
-				state.inputShouldBeSubmitted = false;	
-			}
-
-			// IF THE DATA HAS CHANGED OR IF THE FIELD IS SET TO ALWAYS SUBMIT, ADD IT TO THE DATA STACK
-
-			if ( state.inputShouldBeSubmitted ) {
-
-				keyValuePairStrings.push( encodeURIComponent( input.name ) + '=' + encodeURIComponent( input.getValue( config.multiValueSeparator ) ) );
-
-			}
-
-		});
-
-		// COMBINE FIELD ARRAY INTO STRING
-
-		serializedFields = keyValuePairStrings.join('&');
+		let serializedValues = serialize( values, innerConnector, outerConnector );
 
 		// RETURN SERIALIZED DATA
 
-		return serializedFields;
+		return serializedValues;
 
 	};
 
-	Element.prototype.serialize = serialize;
+	Element.prototype.serialize = serializeForm;
 
 	// GET SUBMITTABLE INPUT NAMES IN A WRAPPER
 
@@ -1080,6 +998,34 @@
 
 	Element.prototype.resetValuesToOriginal = resetValuesToOriginal;
 
+	// SET VALUES FOR ALL INPUTS IN A FORM
+
+	let setValuesForAllInputsInForm = function( values ) {
+
+		var form = this;
+
+		// SET EDITABLE INPUT VALUES FROM HTTP PARAMS
+
+		let submittableInputs = form.getSubmittableInputs();
+
+		submittableInputs.forEach(function(input){
+
+			if ( input.name in values ) {
+
+				input.setValue( values[input.name] );
+
+			} else {
+
+				input.resetValueToOriginal();
+
+			}
+
+		});
+
+	};
+
+	HTMLFormElement.prototype.setValues = setValuesForAllInputsInForm;
+
 	/*************************************************************/
 	/******************* GENERAL USAGE FUNCTIONS *****************/
 	/*************************************************************/
@@ -1088,7 +1034,7 @@
 
 		// CONVERT THE OBJECT OF KEY VALUE PAIRS TO AN ARRAY OF STRINGIFIED KEY/VALUE PAIRS
 
-		let stringifiedKeyValuePairs = Object.entries( data ).map( ( [ key, value ] ) => ( key ) + innerConnector + ( value ) );
+		let stringifiedKeyValuePairs = Object.entries( data ).map( ( [ key, value ] ) => encodeURIComponent( key ) + innerConnector + encodeURIComponent( value ) );
 
 		// JOIN THE STRINFIED PAIRS AND RETURN
 
@@ -1102,7 +1048,7 @@
 
 		return stringifiedKeyValuePairs.reduce(( accumulator, keyValuePair ) => {
 			[key, value] = keyValuePair.split( innerConnector );
-			accumulator[(key)] = (value);
+			accumulator[decodeURIComponent( key )] = decodeURIComponent( value );
 			return accumulator;
 		}, {});
 
