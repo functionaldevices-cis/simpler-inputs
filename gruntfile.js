@@ -54,14 +54,19 @@ module.exports = function(grunt) {
 
 		/**** PROCESS JS ****/
 
-		uglify: {
-			build: {
-				expand: true,
-				cwd: '<%= path %>',
-				src: ['*.js','!*.min.js',],
-				dest: '<%= path %>',
-				ext: '.min.js',
-				extDot: 'last'
+		terser: {
+			scripts : {
+				options: {
+					compress: {
+						drop_console: false
+					}
+				},
+				files: {
+					//'<%= path %>/classes.min.js': [ '<%= path %>/classes.js' ], ... THIS GETS FILLED IN FROM THE CUSTOM build-terser-file-list TASK
+				},
+				src : [
+					'<%= path %>/*.js'
+				]
 			}
 		},
 
@@ -78,15 +83,34 @@ module.exports = function(grunt) {
 		},
 	});
 
+	grunt.registerTask('build-terser-file-list', function () {
+
+		// read the terser config
+		var terser_config = grunt.config.get('terser') || {};
+		var terser_target_config = terser_config['scripts'] || {};
+
+		// loop through all source files and create an entry in the terser config for each of it
+		var files = grunt.file.expand(terser_target_config.src);
+		for (const [i, filePath] of files.entries()) {
+			terser_target_config.files[filePath.replace('.js','.min.js')] = filePath;
+		}
+
+		delete terser_target_config.src;
+
+		// write back config and run task
+		grunt.config.set('terser', terser_config);
+
+	});
+
 	// 2. Where we tell Grunt we plan to use this plug-in.
-	grunt.loadNpmTasks('grunt-contrib-uglify-es');
+	grunt.loadNpmTasks('@miraries/grunt-terser');
 	grunt.loadNpmTasks('grunt-contrib-copy');
 	grunt.loadNpmTasks('grunt-contrib-watch');
 	grunt.loadNpmTasks('grunt-contrib-clean');
 
 	// 3. Where we tell Grunt what to do when we type "grunt" into the terminal.
-	grunt.registerTask('build', ['copy:build', 'uglify', 'watch']);
-	grunt.registerTask('dist', ['clean', 'copy:dist', 'uglify']);
+	grunt.registerTask('build', ['copy:build', 'build-terser-file-list', 'terser', 'watch']);
+	grunt.registerTask('dist', ['clean', 'copy:dist', 'build-terser-file-list', 'terser']);
 
 
 };
