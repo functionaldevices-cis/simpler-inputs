@@ -33,7 +33,6 @@
 
 				self.initLogicForInputs( document.querySelectorAll('input, textarea, select') );
 
-
 			});
 
 		};
@@ -52,34 +51,40 @@
 
 			inputs.forEach(function(input){
 
-				let inputType = input.getType();
+				if ( ! ( 'simplerInputsInitialized' in input ) ) { // NEED TO ENSURE THAT THIS DOESN'T FIRE TWICE ON INPUTS
 
-				switch( inputType ) {
+					let inputType = input.getType();
 
-					case 'radio' :
+					switch( inputType ) {
 
-						input.addEventListener('change', function(event){
+						case 'radio' :
 
-							var inputs = input.getScope().querySelectorAll('input[name="' + input.name + '"]');
-							inputs.forEach(function(siblingInput){
-								siblingInput.dispatchEvent(new Event('change-all', { bubbles: true }))
+							input.addEventListener('change', function(event){
+
+								var inputs = input.getScope().querySelectorAll('input[name="' + input.name + '"]');
+								inputs.forEach(function(siblingInput){
+									siblingInput.dispatchEvent(new Event('change-all', { bubbles: true }))
+								});
+
 							});
 
-						});
+							break;
 
-						break;
+					}
 
-				}
+					// STORE THE ORIGINAL VALUE TO TRACK IF INPUT HAS CHANGED
 
-				// STORE THE ORIGINAL VALUE TO TRACK IF INPUT HAS CHANGED
+					input.storeOriginalValue();
 
-				input.storeOriginalValue();
+					// SET UP KEYSTOPPED EVENT
 
-				// SET UP KEYSTOPPED EVENT
+					if ( inputType.startsWith('text') || [ 'email', 'tel', 'fax', 'url', 'date', 'time', 'week', 'month', 'number'].includes( inputType ) ) {
 
-				if ( inputType.startsWith('text') || [ 'email', 'tel', 'fax', 'url', 'date', 'time', 'week', 'month', 'number'].includes( inputType ) ) {
+						window.simplerInputs.initKeyStoppedEvent( input );
 
-					window.simplerInputs.initKeyStoppedEvent( input );
+					}
+
+					input.simplerInputsInitialized = true;
 
 				}
 
@@ -749,7 +754,7 @@
 			// STEP UP THE ANCESTOR CHANGE, UNTIL WE HAVE AN ELEMENT THAT HAS NO PARENT, WHO'S PARENT IS <html>, OR WHO HAS
 			// MULTIPLE OF THE SPECIFIED INPUT AS CHILDREN
 
-			while ( ( numInputs < 2 ) && ( ancestor.parentElement !== null ) && ( ancestor.parentElement.tagName.toLowerCase() !== 'html' ) ) {
+			while ( ( numInputs < 2 ) && ( ancestor.parentElement !== null ) &&( ancestor.tagName.toLowerCase() !== 'form' ) && ( ancestor.parentElement.tagName.toLowerCase() !== 'html' ) ) {
 
 				ancestor = ancestor.parentElement;
 				ancestorChain.push(ancestor);
@@ -1048,11 +1053,20 @@
 
 		return stringifiedKeyValuePairs.reduce(( accumulator, keyValuePair ) => {
 			[key, value] = keyValuePair.split( innerConnector );
-			accumulator[decodeURIComponent( key )] = decodeURIComponent( value );
+			accumulator[safeDecodeURIComponent( key )] = safeDecodeURIComponent( value );
 			return accumulator;
 		}, {});
 
 	};
+
+	function safeDecodeURIComponent( string ) {
+		try {
+			string = decodeURIComponent(string)
+		} catch (ex) {
+			string = string;
+		}
+		return string;
+	}
 
 	/*************************************************************/
 	/*********************** INITIALIZATION **********************/
